@@ -3,8 +3,8 @@ Repo for practical .NET programming 2020 tasks (student account s02170512)
  
 # NNModel
 _____
-Kласс -  ONNX-модели _(*.onnx)_ с свойствам и методами: 
-- путь к модели
+Kласс -  ONNX-модели со свойствам и методами: 
+- путь к модели _(*.onnx)_ 
 - путь к меткам классов _(*.txt)_
 - размер обрабатываемых изображений
 - _mode_  ```if grayscale: mode == true, else rgb: mode == false```
