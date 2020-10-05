@@ -5,6 +5,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="UserMessageEventHandler.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.5.1" />
     <PackageReference Include="SixLabors.ImageSharp" Version="1.0.1" />
   </ItemGroup>
