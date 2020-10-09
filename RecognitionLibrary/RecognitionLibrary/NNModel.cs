@@ -51,7 +51,7 @@
             grayscaleMode = grayMode;
             CQ = new ConcurrentQueue<RecognitionInfo>();
             cancel = new CancellationTokenSource();
-            Console.CancelKeyPress += new ConsoleCancelEventHandler((s, args) => { args.Cancel = true; cancel.Cancel(); });
+            Console.CancelKeyPress += new ConsoleCancelEventHandler((sender, args) => { args.Cancel = true; cancel.Cancel(); });
         }
 
         public DenseTensor<float> PreprocessImage(string ImagePath)
@@ -100,7 +100,7 @@
 
         public ConcurrentQueue<RecognitionInfo> MakePrediction(string dirpath)
         {
-            MessageToUser?.Invoke(this, "If you want to stop recognition press ESС");
+            MessageToUser?.Invoke(this, "If you want to stop recognition press ctrl + C");
             CancellationToken token = cancel.Token;
             try
             {
@@ -116,7 +116,7 @@
                                  file.Contains(".png")
                          select file;
 
-                if (images.Count() == 0) // Если пользователь передал пустуцю директорию, меняем на дефолтную директори проекта с тестовыми изображениями
+                if (images.Count() == 0) // Если пользователь передал пустую директорию, меняем на дефолтную директори проекта с тестовыми изображениями
                 {
                     MessageToUser?.Invoke(this, "Your directory is empty. Change to embedded directory with images");
                     images = from file in Directory.GetFiles(DefaultImageDir)
