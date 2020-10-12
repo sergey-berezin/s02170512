@@ -18,6 +18,8 @@
 
     public delegate void UserMessageEventHandler(NNModel sender, string Message);
 
+    public delegate void ResultEventHandler(NNModel sender, ConcurrentQueue<RecognitionInfo> result);
+
     public class NNModel
     {
         private InferenceSession Session;
@@ -39,6 +41,8 @@
         public string DefaultImageDir = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.Parent.Parent.FullName;
 
         public event UserMessageEventHandler MessageToUser;
+
+        public event ResultEventHandler OutputResult;
 
         public NNModel(string modelPath, string labelPath, int size = 28, bool grayMode = false)
         {
@@ -128,6 +132,7 @@
                 var tasks = Parallel.ForEach<string>(images, po, img =>
                 {
                     CQ.Enqueue(ProcessImage(img));
+                    OutputResult?.Invoke(this, CQ);
                 });
 
             }
