@@ -51,7 +51,7 @@
             grayscaleMode = grayMode;
             CQ = new ConcurrentQueue<RecognitionInfo>();
             cancel = new CancellationTokenSource();
-            Console.CancelKeyPress += new ConsoleCancelEventHandler((sender, args) => { args.Cancel = true; cancel.Cancel(); });
+            Console.CancelKeyPress += new ConsoleCancelEventHandler((sender, args) => { args.Cancel = true; StopRecognition(); });
         }
 
         public DenseTensor<float> PreprocessImage(string ImagePath)
