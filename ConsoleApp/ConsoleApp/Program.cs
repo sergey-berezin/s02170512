@@ -30,7 +30,7 @@ namespace ConsoleApp
             NNModel Mnist = new NNModel(Path.Combine(curDir, "mnist-8.onnx"), Path.Combine(curDir, "classlabel.txt"));
             Mnist.MessageToUser += PrintMessageToUser;
             Mnist.OutputResult += PrintResult;
-            var t = Task.Run(() => { return Mnist.MakePrediction(img); }).Result;
+            var t = Task.Run(() => { return Mnist.MakePrediction(); }).Result;
             
         }
     }

@@ -38,13 +38,15 @@
 
         public string[] ClassLabels { get; }
 
-        public string DefaultImageDir = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.Parent.Parent.FullName;
+        public static string DefaultImageDir = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.Parent.Parent.FullName;
 
         public event UserMessageEventHandler MessageToUser;
 
         public event ResultEventHandler OutputResult;
 
-        public NNModel(string modelPath, string labelPath, int size = 28, bool grayMode = false)
+        public string ImageDirectory { get; set; }
+
+        public NNModel(string modelPath, string labelPath, string imageDirectory = "", int size = 28, bool grayMode = false)
         {
             ModelPath = modelPath;
             DefaultImageDir = Path.Combine(DefaultImageDir, "images");
@@ -55,6 +57,7 @@
             grayscaleMode = grayMode;
             CQ = new ConcurrentQueue<RecognitionInfo>();
             cancel = new CancellationTokenSource();
+            ImageDirectory = imageDirectory;
         }
 
         public DenseTensor<float> PreprocessImage(string ImagePath)
@@ -95,13 +98,12 @@
             var sum = output.Sum(x => (float)Math.Exp(x));
             var softmax = output.Select(x => (float)Math.Exp(x) / sum);
 
-            string[] name = img_path.Split("\\");
-            RecognitionInfo recognitionResult = new RecognitionInfo(name[name.Length - 1], ClassLabels[softmax.ToList().IndexOf(softmax.Max())], softmax.Max());
+            RecognitionInfo recognitionResult = new RecognitionInfo(img_path, ClassLabels[softmax.ToList().IndexOf(softmax.Max())], softmax.Max());
 
             return recognitionResult;
         }
 
-        public ConcurrentQueue<RecognitionInfo> MakePrediction(string dirpath)
+        public ConcurrentQueue<RecognitionInfo> MakePrediction()
         {
             MessageToUser?.Invoke(this, "If you want to stop recognition press ctrl + C");
             CancellationToken token = cancel.Token;
@@ -113,7 +115,17 @@
                 po.CancellationToken = token;
                 po.MaxDegreeOfParallelism = Environment.ProcessorCount;
 
-                images = from file in Directory.GetFiles(dirpath) // пустой путь - throw exception
+
+                if (ImageDirectory == "") // Если пользователь передал пустую директорию, меняем на дефолтную директори проекта с тестовыми изображениями
+                {
+                    MessageToUser?.Invoke(this, "You haven't set the path. Changed to embedded directory with images");
+                    images = from file in Directory.GetFiles(DefaultImageDir)
+                             where file.Contains(".jpg") ||
+                                     file.Contains(".jpeg") ||
+                                     file.Contains(".png")
+                             select file;
+                }
+                images = from file in Directory.GetFiles(ImageDirectory) // пустой путь - throw exception
                          where file.Contains(".jpg") ||
                                  file.Contains(".jpeg") ||
                                  file.Contains(".png")
@@ -128,13 +140,16 @@
                                      file.Contains(".png")
                              select file;
                 }
-
-                var tasks = Parallel.ForEach<string>(images, po, img =>
+                Task.Run(() =>
                 {
-                    CQ.Enqueue(ProcessImage(img));
-                    OutputResult?.Invoke(this, CQ);
-                });
-
+                    var tasks = Parallel.ForEach<string>(images, po, img =>
+                    {
+                        CQ.Enqueue(ProcessImage(img));
+                        //Thread.Sleep(1000);
+                        OutputResult?.Invoke(this, CQ);
+                    });
+                }, token);
+            
             }
             catch (OperationCanceledException)
             {
