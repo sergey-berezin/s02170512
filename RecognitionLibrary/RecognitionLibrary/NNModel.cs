@@ -140,15 +140,12 @@
                                      file.Contains(".png")
                              select file;
                 }
-                Task.Run(() =>
-                {
-                    var tasks = Parallel.ForEach<string>(images, po, img =>
+                var tasks = Parallel.ForEach<string>(images, po, img =>
                     {
                         CQ.Enqueue(ProcessImage(img));
-                        //Thread.Sleep(1000);
+                        Thread.Sleep(1000);
                         OutputResult?.Invoke(this, CQ);
                     });
-                }, token);
             
             }
             catch (OperationCanceledException)
@@ -166,6 +163,7 @@
         public void StopRecognition()
         {
             cancel.Cancel();
+            cancel = new CancellationTokenSource();
         }
     }
 }

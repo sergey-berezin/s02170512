@@ -41,10 +41,11 @@
     </Window.Resources>
 
     <Window.CommandBindings>
-        <CommandBinding Command = "Open"
+        <CommandBinding Command = "Open" 
+                        CanExecute="CanOpenCommand"
                         Executed="OpenCommand"/>
         <CommandBinding Command ="{x:Static local:MainWindow.OpenDefault}"
-                        CanExecute="CanOpenDefaultCommand"
+                        CanExecute="CanOpenCommand"
                         Executed="OpenDefaultCommand"/>
         <CommandBinding Command ="{x:Static local:MainWindow.Stop}"
                         CanExecute="CanStopCommand"
@@ -60,7 +61,7 @@
         <Button Content="Stop" HorizontalAlignment="Left" Margin="102,414,0,0" VerticalAlignment="Top" Width="82" Command="{x:Static local:MainWindow.Stop}"/>
         <Button Content="Open" HorizontalAlignment="Left" Margin="12,454,0,0" VerticalAlignment="Top" Width="67" Command="Open"/>
         <Button Content="OpenDefault" HorizontalAlignment="Left" Margin="102,454,0,0" VerticalAlignment="Top" Width="84" Command="{x:Static local:MainWindow.OpenDefault}"/>
-        <ListBox Name ="Classes" Margin="0,25,658,190" SelectionChanged="ListBox_SelectionChanged" ItemTemplate="{StaticResource ClassesTemplate}" ItemsSource="{Binding Path=Classes, UpdateSourceTrigger=PropertyChanged}" IsSynchronizedWithCurrentItem ="True" />
+        <ListBox Name ="Classes" Margin="0,25,658,190" SelectionChanged="ListBox_SelectionChanged" ItemTemplate="{StaticResource ClassesTemplate}" ItemsSource="{Binding Path=AvailableClasses, UpdateSourceTrigger=PropertyChanged}" IsSynchronizedWithCurrentItem ="True" />
         <TextBlock HorizontalAlignment="Left" Text="Class Labels" TextWrapping="Wrap" VerticalAlignment="Top" Height="25" Width="79" TextAlignment="Center"/>
         <!--<ProgressBar HorizontalAlignment="Left" Height="15" Margin="0,541,0,0" VerticalAlignment="Top" Width="228" Minimum="0" Maximum="{ Binding Source = StatusMax, UpdateSourceTrigger=PropertyChanged}" Name="Status" Value="{Binding Path=RecognitionStatus, UpdateSourceTrigger=PropertyChanged}" />-->
         <ListBox Name="SelectedClass" ItemsSource="{Binding Path=SelectedClassInfo,  UpdateSourceTrigger=PropertyChanged}"  ItemTemplate="{StaticResource ImageTemplate}" ItemsPanel="{StaticResource PanelTemplate}"  Margin="228,25,0,0"/>

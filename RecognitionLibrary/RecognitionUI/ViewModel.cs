@@ -1,25 +1,28 @@
 ﻿namespace RecognitionUI
 {
-    using Avalonia.Controls;
     using RecognitionLibrary;
     using System;
     using System.Collections.Concurrent;
     using System.Collections.ObjectModel;
-    using System.Collections.Specialized;
     using System.ComponentModel;
     using System.IO;
     using System.Linq;
     using System.Reactive.Linq;
-    using System.Reflection.Metadata.Ecma335;
-    using System.Runtime.InteropServices.WindowsRuntime;
+    using System.Threading;
     using System.Threading.Tasks;
-    using System.Windows;
+    using System.Windows.Threading;
 
-    //using System.Windows.Forms;
+
+    /* TODO: динамическое отображение классов (по мере поступления?) */
+
 
     public class ViewModel : INotifyPropertyChanged
     {
         private string selectedClass;
+
+        internal bool isRunning;
+
+        readonly Dispatcher disp = Dispatcher.CurrentDispatcher;
 
         private string modelPath;
 
@@ -64,9 +67,9 @@
             }
         }
 
-        public ObservableCollection<Pair<string, int>> Classes { get; set; }
+        public ObservableCollection<Pair<string, int>> AvailableClasses { get; set; }
 
-        public ConcurrentQueue<RecognitionInfo> ClassesInfo;
+        public ConcurrentQueue<RecognitionInfo> ClassesInfo;  // Model.CQ
 
         public ObservableCollection<RecognitionInfo> SelectedClassInfo { get; set; }
 
@@ -85,33 +88,32 @@
                 classLabels = Path.Combine(curDir, "classlabel.txt");
             }
             Initialize();
+            Model.OutputResult += ChangeCollectionResult;
         }
 
         public void Initialize() 
         {
             Model = new NNModel(modelPath, classLabels);
-            Classes = new ObservableCollection<Pair<string, int>>();
-           
-            foreach (string line in File.ReadAllLines(classLabels))
-            {
-                Classes.Add(new Pair<string, int>(line, 0));
-            }
+            AvailableClasses = new ObservableCollection<Pair<string, int>>();
 
+            /*foreach (string line in File.ReadAllLines(classLabels))
+            {
+                AvailableClasses.Add(new Pair<string, int>(line, 0));
+            }*/
+            SelectedClassInfo = new ObservableCollection<RecognitionInfo>();
             ClassesInfo = new ConcurrentQueue<RecognitionInfo>();
-            Model.OutputResult += ChangeCollectionResult;
         }
 
         public void Clear()
         {
-            foreach(var t in Classes)
-            {
-                t.Item2 = 0;
-            }
+            AvailableClasses.Clear();
             ClassesInfo.Clear();
-            Model.CQ.Clear();
+            SelectedClassInfo.Clear();
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("AvailableCLasses"));
+            //Model.CQ.Clear();
         }
 
-        public ObservableCollection<RecognitionInfo> SelectAll(string classlabel)
+        public ObservableCollection<RecognitionInfo> SelectAll(string classlabel) //task
         {
             ObservableCollection<RecognitionInfo> res = new ObservableCollection<RecognitionInfo>();
             if (ClassesInfo.Count() == 0)
@@ -124,21 +126,32 @@
             return res;
         }
 
-        public void ChangeCollectionResult(NNModel sender, ConcurrentQueue<RecognitionInfo> result)
+        public void ChangeCollectionResult(NNModel sender, ConcurrentQueue<RecognitionInfo> result) //task
         {
-            RecognitionInfo tmp;
-            result.TryDequeue(out tmp);
-            var p = Classes.Single(i => i.Item1 == tmp.Class);
-            p.Item2 += 1;
-            ClassesInfo.Enqueue(tmp);
-
+            disp.BeginInvoke(new Action(() =>
+            {
+               RecognitionInfo tmp;
+               result.TryDequeue(out tmp);
+               Pair<string, int> p;
+               try
+               {
+                   p = AvailableClasses.Single(i => i.Item1 == tmp.Class);
+                   p.Item2 += 1;
+               }
+               catch(InvalidOperationException)
+               {
+                   AvailableClasses.Add(new Pair<string, int>(tmp.Class, 1));
+                   PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("AvailableClasses")); //Item2
+               }         
+               ClassesInfo.Enqueue(tmp);
+            }));
             //RecognitionStatus += ClassesInfo.Count;s
             //SourceChanged?.Invoke(this, e: new SourceChangedEventArgs("Classes"));
             //PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Item2"));
 
         }
 
-        public void OpenDefault()
+        public void OpenDefault() //task
         {
             Clear();
             imageDirectory =  NNModel.DefaultImageDir;
@@ -148,7 +161,7 @@
 
         }
 
-        internal void Open(string selectedPath)
+        internal void Open(string selectedPath) //task
         {
             Clear();
             Model.ImageDirectory = selectedPath;
@@ -156,14 +169,24 @@
             //PropertyChanged(this, new PropertyChangedEventArgs("StatusMax"));
         }
 
-        internal void Start()
+        internal void Start()//task
         {
-             Model.MakePrediction();
+            var uis = TaskScheduler.FromCurrentSynchronizationContext();
+
+            Task.Run(() =>
+            {
+                var res = Model.MakePrediction();
+                //return res;
+            }).ContinueWith(t =>
+            {
+                isRunning = false;
+            }, CancellationToken.None, TaskContinuationOptions.None, uis);
         }
 
         internal void Stop()
-        {
+        {            
             Model.StopRecognition();
+            isRunning = false;
         }
 
     }
