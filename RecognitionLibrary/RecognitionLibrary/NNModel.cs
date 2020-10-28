@@ -143,7 +143,7 @@
                 var tasks = Parallel.ForEach<string>(images, po, img =>
                     {
                         CQ.Enqueue(ProcessImage(img));
-                        Thread.Sleep(1000);
+                        //Thread.Sleep(1000);
                         OutputResult?.Invoke(this, CQ);
                     });
             

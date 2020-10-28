@@ -69,7 +69,7 @@
 
         public ObservableCollection<Pair<string, int>> AvailableClasses { get; set; }
 
-        public ConcurrentQueue<RecognitionInfo> ClassesInfo;  // Model.CQ
+        public ObservableCollection<RecognitionInfo> ClassesImages { get; set; }
 
         public ObservableCollection<RecognitionInfo> SelectedClassInfo { get; set; }
 
@@ -95,30 +95,26 @@
         {
             Model = new NNModel(modelPath, classLabels);
             AvailableClasses = new ObservableCollection<Pair<string, int>>();
-
-            /*foreach (string line in File.ReadAllLines(classLabels))
-            {
-                AvailableClasses.Add(new Pair<string, int>(line, 0));
-            }*/
+            ClassesImages = new ObservableCollection<RecognitionInfo>();
             SelectedClassInfo = new ObservableCollection<RecognitionInfo>();
-            ClassesInfo = new ConcurrentQueue<RecognitionInfo>();
         }
 
         public void Clear()
         {
             AvailableClasses.Clear();
-            ClassesInfo.Clear();
+            ClassesImages.Clear();
             SelectedClassInfo.Clear();
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("AvailableCLasses"));
-            //Model.CQ.Clear();
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("CLassesImages"));
+            Model.CQ.Clear();
         }
 
-        public ObservableCollection<RecognitionInfo> SelectAll(string classlabel) //task
+        public ObservableCollection<RecognitionInfo> SelectAll(string classlabel) // add collection filter???
         {
             ObservableCollection<RecognitionInfo> res = new ObservableCollection<RecognitionInfo>();
-            if (ClassesInfo.Count() == 0)
+            if (ClassesImages.Count() == 0)
                 return res;
-            foreach(var q in ClassesInfo)
+            foreach(var q in ClassesImages)
             {
                 if (q.Class == classlabel)
                     res.Add(q);
@@ -126,24 +122,25 @@
             return res;
         }
 
-        public void ChangeCollectionResult(NNModel sender, ConcurrentQueue<RecognitionInfo> result) //task
+        public void ChangeCollectionResult(NNModel sender, ConcurrentQueue<RecognitionInfo> result) 
         {
             disp.BeginInvoke(new Action(() =>
             {
-               RecognitionInfo tmp;
-               result.TryDequeue(out tmp);
-               Pair<string, int> p;
-               try
-               {
-                   p = AvailableClasses.Single(i => i.Item1 == tmp.Class);
-                   p.Item2 += 1;
-               }
-               catch(InvalidOperationException)
-               {
-                   AvailableClasses.Add(new Pair<string, int>(tmp.Class, 1));
-                   PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("AvailableClasses")); //Item2
-               }         
-               ClassesInfo.Enqueue(tmp);
+                RecognitionInfo tmp;
+                result.TryDequeue(out tmp);
+                ClassesImages.Add(tmp);
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("ClassesImages"));
+                Pair<string, int> p;
+                try
+                {
+                    p = AvailableClasses.Single(i => i.Item1 == tmp.Class);
+                    p.Item2 += 1;
+                }
+                catch(InvalidOperationException)
+                {
+                    AvailableClasses.Add(new Pair<string, int>(tmp.Class, 1));
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("AvailableClasses"));
+                }         
             }));
             //RecognitionStatus += ClassesInfo.Count;s
             //SourceChanged?.Invoke(this, e: new SourceChangedEventArgs("Classes"));
@@ -161,7 +158,7 @@
 
         }
 
-        internal void Open(string selectedPath) //task
+        internal void Open(string selectedPath) 
         {
             Clear();
             Model.ImageDirectory = selectedPath;
@@ -169,10 +166,8 @@
             //PropertyChanged(this, new PropertyChangedEventArgs("StatusMax"));
         }
 
-        internal void Start()//task
+        internal void Start()
         {
-            var uis = TaskScheduler.FromCurrentSynchronizationContext();
-
             Task.Run(() =>
             {
                 var res = Model.MakePrediction();
@@ -180,7 +175,7 @@
             }).ContinueWith(t =>
             {
                 isRunning = false;
-            }, CancellationToken.None, TaskContinuationOptions.None, uis);
+            });
         }
 
         internal void Stop()

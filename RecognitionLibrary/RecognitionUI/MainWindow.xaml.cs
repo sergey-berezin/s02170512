@@ -1,14 +1,16 @@
 ﻿namespace RecognitionUI
 {
-    using System;
+    using System.Collections.Generic;
     using System.Windows;
     using System.Windows.Controls;
+    using System.Windows.Forms;
     using System.Windows.Input;
 
     public partial class MainWindow : Window
     {
         
         public static RoutedCommand OpenDefault = new RoutedCommand("OpenDefault", typeof(MainWindow));
+        public static RoutedCommand CustomModel = new RoutedCommand("CustomModel", typeof(MainWindow));
         public static RoutedCommand Start = new RoutedCommand("Start", typeof(MainWindow));
         public static RoutedCommand Stop = new RoutedCommand("Stop", typeof(MainWindow));
         
@@ -19,7 +21,6 @@
         /* TODO: два текстбокса для ввода пути и меток к произвольной сетке */
         /* TODO: fix ProgressBar */
         /* TODO: Вид кнопок */
-        /* TODO: fix Stop */
 
 
         public MainWindow()
@@ -40,7 +41,7 @@
 
         public void OpenCommand(object sender, ExecutedRoutedEventArgs e)
         {
-            System.Windows.Forms.FolderBrowserDialog fbd = new System.Windows.Forms.FolderBrowserDialog();
+            FolderBrowserDialog fbd = new FolderBrowserDialog();
 
             if (fbd.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
@@ -74,6 +75,25 @@
         {
             VM.Stop();
             //VM.isRunning = false;
+        }
+
+        private void CanCustomCommand(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = true;
+        }
+
+        public void CustomModelCommand(object sender, ExecutedRoutedEventArgs e)
+        {
+            OpenFileDialog ofd = new OpenFileDialog();
+            ofd.Multiselect = true;
+
+            if (ofd.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                List<string> paths = new List<string>(ofd.FileNames);
+                VM = new ViewModel(paths.Find(s => s.Contains(".onnx")), paths.Find(s => s.Contains("txt") || s.Contains("csv") || s.Contains("label")));
+                this.DataContext = VM;
+                VM.isRunning = false;
+            }
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)

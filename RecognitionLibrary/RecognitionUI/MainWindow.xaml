@@ -33,11 +33,19 @@
                         </ToolTip>
                     </Image.ToolTip>
                 </Image>
-                <!--<TextBlock FontSize="14" Text="{Binding Path=Class,  UpdateSourceTrigger=PropertyChanged}"  Width="39" TextAlignment="Center" />
-                <TextBlock FontSize="14" Text="{Binding Path=Path,  UpdateSourceTrigger=PropertyChanged}" Width="60" TextAlignment="Center"/>
-                <TextBlock FontSize="14" Text="{Binding Path=Confidence,  UpdateSourceTrigger=PropertyChanged}" Width="60" TextAlignment="Center"/>-->
             </StackPanel>
         </DataTemplate>
+        <Style x:Key="test" TargetType="Button">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Name="ButtonBorder" CornerRadius="6" BorderThickness="1" BorderBrush="CadetBlue" Background="AliceBlue">
+                            <ContentPresenter Content="{TemplateBinding Content}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <Window.CommandBindings>
@@ -53,18 +61,22 @@
         <CommandBinding Command ="{x:Static local:MainWindow.Start}"
                         CanExecute="CanStartCommand"
                         Executed="StartCommand"/>
-
+        <CommandBinding Command ="{x:Static local:MainWindow.CustomModel}"
+                        CanExecute="CanCustomCommand"
+                        Executed="CustomModelCommand"/>
     </Window.CommandBindings>
 
     <Grid>
-        <Button Content="Start" HorizontalAlignment="Left" Margin="12,414,0,0" VerticalAlignment="Top" Width="67" Command="{x:Static local:MainWindow.Start}"/>
-        <Button Content="Stop" HorizontalAlignment="Left" Margin="102,414,0,0" VerticalAlignment="Top" Width="82" Command="{x:Static local:MainWindow.Stop}"/>
-        <Button Content="Open" HorizontalAlignment="Left" Margin="12,454,0,0" VerticalAlignment="Top" Width="67" Command="Open"/>
-        <Button Content="OpenDefault" HorizontalAlignment="Left" Margin="102,454,0,0" VerticalAlignment="Top" Width="84" Command="{x:Static local:MainWindow.OpenDefault}"/>
-        <ListBox Name ="Classes" Margin="0,25,658,190" SelectionChanged="ListBox_SelectionChanged" ItemTemplate="{StaticResource ClassesTemplate}" ItemsSource="{Binding Path=AvailableClasses, UpdateSourceTrigger=PropertyChanged}" IsSynchronizedWithCurrentItem ="True" />
-        <TextBlock HorizontalAlignment="Left" Text="Class Labels" TextWrapping="Wrap" VerticalAlignment="Top" Height="25" Width="79" TextAlignment="Center"/>
+        <Button Content="Start" Style="{StaticResource test}" HorizontalAlignment="Left" Margin="70,484,0,0" VerticalAlignment="Top" Width="84" Command="{x:Static local:MainWindow.Start}" Height="20"/>
+        <Button Content="Stop" Style="{StaticResource test}" HorizontalAlignment="Left" Margin="70,509,0,0" VerticalAlignment="Top" Width="84" Command="{x:Static local:MainWindow.Stop}" Height="20"/>
+        <Button Content="Open" Style="{StaticResource test}" HorizontalAlignment="Left" Margin="70,410,0,0" VerticalAlignment="Top" Width="84" Command="Open" Height="20"/>
+        <Button Content="OpenDefault" Style="{StaticResource test}" HorizontalAlignment="Left" Margin="70,434,0,0" VerticalAlignment="Top" Width="84" Command="{x:Static local:MainWindow.OpenDefault}" Height="20"/>
+        <Button Content="CutomModel" Style="{StaticResource test}" HorizontalAlignment="Left" Margin="70,459,0,0" VerticalAlignment="Top" Width="84" Command="{x:Static local:MainWindow.CustomModel}" Height="20"/>
+        <ListBox Name ="Classes" Margin="0,25,658,190" SelectionChanged="ListBox_SelectionChanged" IsSynchronizedWithCurrentItem ="True" ItemTemplate="{StaticResource ClassesTemplate}" ItemsSource="{Binding Path=AvailableClasses, UpdateSourceTrigger=PropertyChanged}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Visible" />
+        <TextBlock HorizontalAlignment="Left" Text="Class Labels" TextWrapping="Wrap" VerticalAlignment="Top" Height="20" Width="94" TextAlignment="Center" Margin="0,5,0,0"/>
         <!--<ProgressBar HorizontalAlignment="Left" Height="15" Margin="0,541,0,0" VerticalAlignment="Top" Width="228" Minimum="0" Maximum="{ Binding Source = StatusMax, UpdateSourceTrigger=PropertyChanged}" Name="Status" Value="{Binding Path=RecognitionStatus, UpdateSourceTrigger=PropertyChanged}" />-->
-        <ListBox Name="SelectedClass" ItemsSource="{Binding Path=SelectedClassInfo,  UpdateSourceTrigger=PropertyChanged}"  ItemTemplate="{StaticResource ImageTemplate}" ItemsPanel="{StaticResource PanelTemplate}"  Margin="228,25,0,0"/>
+        <ListBox Name="SelectedClass" ItemsSource="{Binding Path=SelectedClassInfo,  UpdateSourceTrigger=PropertyChanged}"  ItemTemplate="{StaticResource ImageTemplate}" ItemsPanel="{StaticResource PanelTemplate}"  Margin="228,25,0,278" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Visible" />
+        <ListBox Name="AllClass" ItemsSource="{Binding Path=ClassesImages,  UpdateSourceTrigger=PropertyChanged}"  ItemTemplate="{StaticResource ImageTemplate}" ItemsPanel="{StaticResource PanelTemplate}"  Margin="228,276,0,0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Visible" />
 
     </Grid>
 </Window>
