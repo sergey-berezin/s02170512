@@ -17,10 +17,8 @@
 
         public ViewModel VM;
 
-        /* TODO: отдельное окно для отображения все изображений */
-        /* TODO: два текстбокса для ввода пути и меток к произвольной сетке */
         /* TODO: fix ProgressBar */
-        /* TODO: Вид кнопок */
+       
 
 
         public MainWindow()
@@ -90,7 +88,11 @@
             if (ofd.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 List<string> paths = new List<string>(ofd.FileNames);
-                VM = new ViewModel(paths.Find(s => s.Contains(".onnx")), paths.Find(s => s.Contains("txt") || s.Contains("csv") || s.Contains("label")));
+                string modelPath = paths.Find(s => s.Contains(".onnx"));
+                string labelsPath = paths.Find(s => s.Contains("txt") || s.Contains("csv") || s.Contains("label"));
+               // System.Windows.MessageBox.Show(modelPath);
+               // System.Windows.MessageBox.Show( labelsPath);
+                 VM = new ViewModel(modelPath, labelsPath);
                 this.DataContext = VM;
                 VM.isRunning = false;
             }

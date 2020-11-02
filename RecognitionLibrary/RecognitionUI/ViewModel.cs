@@ -8,7 +8,6 @@
     using System.IO;
     using System.Linq;
     using System.Reactive.Linq;
-    using System.Threading;
     using System.Threading.Tasks;
     using System.Windows.Threading;
 
@@ -142,7 +141,7 @@
                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("AvailableClasses"));
                 }         
             }));
-            //RecognitionStatus += ClassesInfo.Count;s
+            //RecognitionStatus += ClassesInfo.Count;
             //SourceChanged?.Invoke(this, e: new SourceChangedEventArgs("Classes"));
             //PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Item2"));
 
