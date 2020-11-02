@@ -5,8 +5,78 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:RecognitionUI"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="MainWindow" Height="600" Width="900"
+        Closing="Window_Closing">
+
+    <Window.Resources>
+        <DataTemplate x:Key="ClassesTemplate">
+            <StackPanel Margin="5" Orientation="Horizontal">
+                <TextBlock FontSize="14" Text="Images of" Width="60" TextAlignment="Left" />
+                <TextBlock FontSize="14" Text="{Binding Path=Item1,  UpdateSourceTrigger=PropertyChanged}"  Width="39" TextAlignment="Center" />
+                <TextBlock FontSize="14" Text="{Binding Path=Item2,  UpdateSourceTrigger=PropertyChanged}" Width="60" TextAlignment="Center"/>
+            </StackPanel>
+        </DataTemplate>
+
+        <ItemsPanelTemplate x:Key="PanelTemplate">
+            <WrapPanel />
+        </ItemsPanelTemplate>
+
+        <DataTemplate x:Key="ImageTemplate">
+            <StackPanel Margin="5" Orientation="Horizontal">
+                <Image Width="100" Height="100" Source="{Binding Path=Path, UpdateSourceTrigger=PropertyChanged}">
+                    <Image.ToolTip>
+                        <ToolTip Width="150" Height="75">
+                            <StackPanel>
+                                <TextBlock Text="{Binding Path=Path, UpdateSourceTrigger=PropertyChanged}" TextWrapping="Wrap" />
+                                <TextBlock Text="{Binding Path=Confidence, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                        </ToolTip>
+                    </Image.ToolTip>
+                </Image>
+            </StackPanel>
+        </DataTemplate>
+        <Style x:Key="test" TargetType="Button">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Name="ButtonBorder" CornerRadius="6" BorderThickness="1" BorderBrush="CadetBlue" Background="AliceBlue">
+                            <ContentPresenter Content="{TemplateBinding Content}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Window.CommandBindings>
+        <CommandBinding Command = "Open" 
+                        CanExecute="CanOpenCommand"
+                        Executed="OpenCommand"/>
+        <CommandBinding Command ="{x:Static local:MainWindow.OpenDefault}"
+                        CanExecute="CanOpenCommand"
+                        Executed="OpenDefaultCommand"/>
+        <CommandBinding Command ="{x:Static local:MainWindow.Stop}"
+                        CanExecute="CanStopCommand"
+                        Executed="StopCommand"/>
+        <CommandBinding Command ="{x:Static local:MainWindow.Start}"
+                        CanExecute="CanStartCommand"
+                        Executed="StartCommand"/>
+        <CommandBinding Command ="{x:Static local:MainWindow.CustomModel}"
+                        CanExecute="CanCustomCommand"
+                        Executed="CustomModelCommand"/>
+    </Window.CommandBindings>
+
     <Grid>
+        <Button Content="Start" Style="{StaticResource test}" HorizontalAlignment="Left" Margin="70,484,0,0" VerticalAlignment="Top" Width="84" Command="{x:Static local:MainWindow.Start}" Height="20"/>
+        <Button Content="Stop" Style="{StaticResource test}" HorizontalAlignment="Left" Margin="70,509,0,0" VerticalAlignment="Top" Width="84" Command="{x:Static local:MainWindow.Stop}" Height="20"/>
+        <Button Content="Open" Style="{StaticResource test}" HorizontalAlignment="Left" Margin="70,410,0,0" VerticalAlignment="Top" Width="84" Command="Open" Height="20"/>
+        <Button Content="OpenDefault" Style="{StaticResource test}" HorizontalAlignment="Left" Margin="70,434,0,0" VerticalAlignment="Top" Width="84" Command="{x:Static local:MainWindow.OpenDefault}" Height="20"/>
+        <Button Content="CutomModel" Style="{StaticResource test}" HorizontalAlignment="Left" Margin="70,459,0,0" VerticalAlignment="Top" Width="84" Command="{x:Static local:MainWindow.CustomModel}" Height="20"/>
+        <ListBox Name ="Classes" Margin="0,25,658,190" SelectionChanged="ListBox_SelectionChanged" IsSynchronizedWithCurrentItem ="True" ItemTemplate="{StaticResource ClassesTemplate}" ItemsSource="{Binding Path=AvailableClasses, UpdateSourceTrigger=PropertyChanged}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Visible" />
+        <TextBlock HorizontalAlignment="Left" Text="Class Labels" TextWrapping="Wrap" VerticalAlignment="Top" Height="20" Width="94" TextAlignment="Center" Margin="0,5,0,0"/>
+        <!--<ProgressBar HorizontalAlignment="Left" Height="15" Margin="0,541,0,0" VerticalAlignment="Top" Width="228" Minimum="0" Maximum="{ Binding Source = StatusMax, UpdateSourceTrigger=PropertyChanged}" Name="Status" Value="{Binding Path=RecognitionStatus, UpdateSourceTrigger=PropertyChanged}" />-->
+        <ListBox Name="SelectedClass" ItemsSource="{Binding Path=SelectedClassInfo,  UpdateSourceTrigger=PropertyChanged}"  ItemTemplate="{StaticResource ImageTemplate}" ItemsPanel="{StaticResource PanelTemplate}"  Margin="228,25,0,278" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Visible" />
+        <ListBox Name="AllClass" ItemsSource="{Binding Path=ClassesImages,  UpdateSourceTrigger=PropertyChanged}"  ItemTemplate="{StaticResource ImageTemplate}" ItemsPanel="{StaticResource PanelTemplate}"  Margin="228,276,0,0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Visible" />
 
     </Grid>
 </Window>
