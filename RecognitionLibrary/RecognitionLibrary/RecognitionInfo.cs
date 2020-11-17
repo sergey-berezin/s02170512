@@ -1,14 +1,17 @@
-﻿namespace RecognitionLibrary
+﻿using System.IO;
+
+namespace RecognitionLibrary
 {
-    public struct RecognitionInfo
+    public class RecognitionInfo
     {
-        public RecognitionInfo(string v1, string v2, float v3) : this()
+        public RecognitionInfo(string v1, string v2, float v3) 
         {
             Path = v1;
             Class = v2;
             Confidence = v3;
+            Image = File.ReadAllBytes(Path);
         }
-
+        public byte[] Image { get; set; }
         public string Path { get; set; }
         public string Class { get; set; }
         public float Confidence { get; set; }

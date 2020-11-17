@@ -3,6 +3,7 @@
     using RecognitionLibrary;
     using System;
     using System.Collections.Concurrent;
+    using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.ComponentModel;
     using System.IO;
@@ -12,7 +13,10 @@
     using System.Windows.Threading;
 
 
-    /* TODO: динамическое отображение классов (по мере поступления?) */
+    /* TODO: поиск по хэшу  +- */ 
+    /* TODO: не подгружать блобу + */
+    /* TODO: добавить поле просмотра статистики */
+
 
 
     public class ViewModel : INotifyPropertyChanged
@@ -20,6 +24,8 @@
         private string selectedClass;
 
         internal bool isRunning;
+
+        public long Statistic { get; set; }
 
         readonly Dispatcher disp = Dispatcher.CurrentDispatcher;
 
@@ -72,6 +78,9 @@
 
         public ObservableCollection<RecognitionInfo> SelectedClassInfo { get; set; }
 
+        public RecognitionLibraryContext db;
+        internal bool isWriting;
+
         public event PropertyChangedEventHandler PropertyChanged;
 
         public ViewModel(params string[] s)
@@ -96,6 +105,9 @@
             AvailableClasses = new ObservableCollection<Pair<string, int>>();
             ClassesImages = new ObservableCollection<RecognitionInfo>();
             SelectedClassInfo = new ObservableCollection<RecognitionInfo>();
+            db = new RecognitionLibraryContext();
+            //db.Images = new 
+
         }
 
         public void Clear()
@@ -127,7 +139,34 @@
             {
                 RecognitionInfo tmp;
                 result.TryDequeue(out tmp);
-                ClassesImages.Add(tmp);
+                lock (db)
+                {
+                    var sameimage = db.FindOne(tmp);
+                    if (sameimage != null)
+                    {
+                        sameimage.Statistic++;
+                        db.SaveChanges();
+                        ClassesImages.Add(new RecognitionInfo(sameimage.Path, sameimage.Label.ToString(), sameimage.Confidence));    
+                    }
+                    else
+                    {
+                        Task.Run(() =>
+                        {
+                            Blob resBlob = new Blob { Image = tmp.Image };
+                            db.Images.Add(new RecognitionImage
+                            {
+                                Path = tmp.Path,
+                                Confidence = tmp.Confidence,
+                                Statistic = 0,
+                                ImageDetails = resBlob,
+                                Label = int.Parse(tmp.Class)
+                            });
+                            db.SaveChanges();
+                        });
+                        ClassesImages.Add(tmp);
+                        //PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("ClassesImages"));
+                    }
+                }
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("ClassesImages"));
                 Pair<string, int> p;
                 try
@@ -144,7 +183,6 @@
             //RecognitionStatus += ClassesInfo.Count;
             //SourceChanged?.Invoke(this, e: new SourceChangedEventArgs("Classes"));
             //PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Item2"));
-
         }
 
         public void OpenDefault() //task

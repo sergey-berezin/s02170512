@@ -1,6 +1,9 @@
 ﻿namespace RecognitionUI
 {
+    using RecognitionLibrary;
     using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
     using System.Windows;
     using System.Windows.Controls;
     using System.Windows.Forms;
@@ -11,6 +14,7 @@
         
         public static RoutedCommand OpenDefault = new RoutedCommand("OpenDefault", typeof(MainWindow));
         public static RoutedCommand CustomModel = new RoutedCommand("CustomModel", typeof(MainWindow));
+        public static RoutedCommand Clear = new RoutedCommand("Clear", typeof(MainWindow));
         public static RoutedCommand Start = new RoutedCommand("Start", typeof(MainWindow));
         public static RoutedCommand Stop = new RoutedCommand("Stop", typeof(MainWindow));
         
@@ -29,6 +33,7 @@
             this.CommandBindings.Add(OpenCmdBinding);
             this.DataContext = VM;
             VM.isRunning = false;
+            //System.Windows.MessageBox.Show(RecognitionLibraryContext.curDir);
         }
 
 
@@ -98,17 +103,37 @@
             }
         }
 
+        private void CanClearCommand(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = VM != null && VM.isWriting;
+        }
+        private void ClearCommand(object sender, ExecutedRoutedEventArgs e)
+        {
+            VM.db.Clear();
+            //VM.isRunning = false;
+        }
+
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             
         }
 
-        private void ListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void Classes_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (Classes.SelectedItem != null && Classes.SelectedItem.GetType().Equals(typeof(Pair<string, int>)))
+            {
                 VM.SelectedClass = ((Pair<string, int>)Classes.SelectedItem).Item1;
-        }
 
+            }
+        }
+        private void Item_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (AllClasses.SelectedItem != null && AllClasses.SelectedItem.GetType().Equals(typeof(RecognitionLibrary.RecognitionInfo)))
+            {
+                VM.Statistic = VM.db.Images.Where(img => img.Path.Equals(((RecognitionLibrary.RecognitionInfo)AllClasses.SelectedItem).Path)).FirstOrDefault().Statistic;
+
+            }
+        }
 
     }
 }
