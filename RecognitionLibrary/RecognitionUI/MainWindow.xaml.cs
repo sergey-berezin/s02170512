@@ -33,7 +33,7 @@
             this.CommandBindings.Add(OpenCmdBinding);
             this.DataContext = VM;
             VM.isRunning = false;
-            //System.Windows.MessageBox.Show(RecognitionLibraryContext.curDir);
+            //System.Windows.MessageBox.Show(ViewModel.curDir);
         }
 
 
@@ -97,7 +97,7 @@
                 string labelsPath = paths.Find(s => s.Contains("txt") || s.Contains("csv") || s.Contains("label"));
                // System.Windows.MessageBox.Show(modelPath);
                // System.Windows.MessageBox.Show( labelsPath);
-                 VM = new ViewModel(modelPath, labelsPath);
+                VM = new ViewModel(modelPath, labelsPath);
                 this.DataContext = VM;
                 VM.isRunning = false;
             }
@@ -105,11 +105,14 @@
 
         private void CanClearCommand(object sender, CanExecuteRoutedEventArgs e)
         {
-            e.CanExecute = VM != null && VM.isWriting;
+            e.CanExecute = VM != null && !VM.isWriting;
         }
         private void ClearCommand(object sender, ExecutedRoutedEventArgs e)
         {
-            VM.db.Clear();
+            lock (VM.db)
+            {
+                //System.Windows.MessageBox.Show(VM.ClassesImages.Count().ToString());
+                VM.db.Clear(); }
             //VM.isRunning = false;
         }
 
@@ -128,10 +131,11 @@
         }
         private void Item_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (AllClasses.SelectedItem != null && AllClasses.SelectedItem.GetType().Equals(typeof(RecognitionLibrary.RecognitionInfo)))
+            if (AllClasses.SelectedItem != null && AllClasses.SelectedItem.GetType().Equals(typeof(RecognitionInfo)))
             {
-                VM.Statistic = VM.db.Images.Where(img => img.Path.Equals(((RecognitionLibrary.RecognitionInfo)AllClasses.SelectedItem).Path)).FirstOrDefault().Statistic;
-
+                
+                VM.Statistic = VM.GetStatistic((RecognitionInfo)AllClasses.SelectedItem);
+                //System.Windows.MessageBox.Show(VM.Statistic.ToString());
             }
         }
 

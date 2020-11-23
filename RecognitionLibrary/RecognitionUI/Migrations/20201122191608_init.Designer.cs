@@ -2,15 +2,17 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using RecognitionLibrary;
 
-namespace RecognitionLibrary.Migrations
+namespace RecognitionUI.Migrations
 {
     [DbContext(typeof(RecognitionLibraryContext))]
-    partial class RecognitionLibraryContextModelSnapshot : ModelSnapshot
+    [Migration("20201122191608_init")]
+    partial class init
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -27,7 +29,7 @@ namespace RecognitionLibrary.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ImagesDetails");
+                    b.ToTable("Blobs");
                 });
 
             modelBuilder.Entity("RecognitionLibrary.RecognitionImage", b =>
@@ -49,14 +51,13 @@ namespace RecognitionLibrary.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<long>("Statistic")
-                        .IsConcurrencyToken()
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 
                     b.HasIndex("ImageDetailsId");
 
-                    b.ToTable("Images");
+                    b.ToTable("RecognitionImages");
                 });
 
             modelBuilder.Entity("RecognitionLibrary.RecognitionImage", b =>

@@ -2,17 +2,15 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using RecognitionLibrary;
 
-namespace RecognitionLibrary.Migrations
+namespace RecognitionUI.Migrations
 {
     [DbContext(typeof(RecognitionLibraryContext))]
-    [Migration("20201116181857_InitialCreate")]
-    partial class InitialCreate
+    partial class RecognitionLibraryContextModelSnapshot : ModelSnapshot
     {
-        protected override void BuildTargetModel(ModelBuilder modelBuilder)
+        protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -29,7 +27,7 @@ namespace RecognitionLibrary.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ImagesDetails");
+                    b.ToTable("Blobs");
                 });
 
             modelBuilder.Entity("RecognitionLibrary.RecognitionImage", b =>
@@ -44,32 +42,20 @@ namespace RecognitionLibrary.Migrations
                     b.Property<long?>("ImageDetailsId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("Label")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Path")
                         .HasColumnType("TEXT");
 
                     b.Property<long>("Statistic")
-                        .IsConcurrencyToken()
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 
                     b.HasIndex("ImageDetailsId");
 
-                    b.ToTable("Images");
-                });
-
-            modelBuilder.Entity("RecognitionLibrary.RecognitionLabel", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("Label")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Labels");
+                    b.ToTable("RecognitionImages");
                 });
 
             modelBuilder.Entity("RecognitionLibrary.RecognitionImage", b =>

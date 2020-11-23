@@ -38,7 +38,7 @@
 
         public string[] ClassLabels { get; }
 
-        public static string DefaultImageDir = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.Parent.Parent.FullName;
+        public static string DefaultImageDir = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.FullName;
 
         public event UserMessageEventHandler MessageToUser;
 
@@ -103,7 +103,7 @@
             return recognitionResult;
         }
 
-        public ConcurrentQueue<RecognitionInfo> MakePrediction()
+        public ConcurrentQueue<RecognitionInfo> MakePrediction(string path)
         {
             MessageToUser?.Invoke(this, "If you want to stop recognition press ctrl + C");
             CancellationToken token = cancel.Token;
@@ -116,7 +116,7 @@
                 po.MaxDegreeOfParallelism = Environment.ProcessorCount;
 
 
-                if (ImageDirectory == "") // Если пользователь передал пустую директорию, меняем на дефолтную директори проекта с тестовыми изображениями
+                if (path == "") // Если пользователь передал пустую директорию, меняем на дефолтную директори проекта с тестовыми изображениями
                 {
                     MessageToUser?.Invoke(this, "You haven't set the path. Changed to embedded directory with images");
                     images = from file in Directory.GetFiles(DefaultImageDir)
@@ -125,7 +125,7 @@
                                      file.Contains(".png")
                              select file;
                 }
-                images = from file in Directory.GetFiles(ImageDirectory) // пустой путь - throw exception
+                images = from file in Directory.GetFiles(path) // пустой путь - throw exception
                          where file.Contains(".jpg") ||
                                  file.Contains(".jpeg") ||
                                  file.Contains(".png")
@@ -159,6 +159,38 @@
             };
             return CQ;
         }
+
+        public ConcurrentQueue<RecognitionInfo> MakePrediction(List<String> images)
+        {
+            MessageToUser?.Invoke(this, "If you want to stop recognition press ctrl + C");
+            CancellationToken token = cancel.Token;
+            try
+            {
+                ParallelOptions po = new ParallelOptions();
+
+                po.CancellationToken = token;
+                po.MaxDegreeOfParallelism = Environment.ProcessorCount;
+
+                var tasks = Parallel.ForEach<string>(images, po, img =>
+                {
+                    CQ.Enqueue(ProcessImage(img));
+                    //Thread.Sleep(1000);
+                    OutputResult?.Invoke(this, CQ);
+                });
+
+            }
+            catch (OperationCanceledException)
+            {
+                MessageToUser?.Invoke(this, "-----------------Interrupted-----------------");
+                Trace.WriteLine("-----------------Interrupted-----------------");
+            }
+            catch (Exception e) when (e is ArgumentException || e is IOException)
+            {
+                Trace.WriteLine(e.Message);
+            };
+            return CQ;
+        }
+
 
         public void StopRecognition()
         {

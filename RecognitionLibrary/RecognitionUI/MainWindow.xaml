@@ -74,18 +74,18 @@
             <ColumnDefinition Width="20*"/>
             <ColumnDefinition Width="1133*"/>
         </Grid.ColumnDefinitions>
-        <Button Content="Start" Style="{StaticResource test}" HorizontalAlignment="Left" Margin="69,670,0,0" VerticalAlignment="Top" Width="84" Command="{x:Static local:MainWindow.Start}" Height="20" Grid.Column="1"/>
-        <Button Content="Stop" Style="{StaticResource test}" HorizontalAlignment="Left" Margin="69,695,0,0" VerticalAlignment="Top" Width="84" Command="{x:Static local:MainWindow.Stop}" Height="20" Grid.Column="1"/>
-        <Button Content="Open" Style="{StaticResource test}" HorizontalAlignment="Left" Margin="69,595,0,0" VerticalAlignment="Top" Width="84" Command="Open" Height="20" Grid.Column="1"/>
-        <Button Content="OpenDefault" Style="{StaticResource test}" HorizontalAlignment="Left" Margin="69,620,0,0" VerticalAlignment="Top" Width="84" Command="{x:Static local:MainWindow.OpenDefault}" Height="20" Grid.Column="1"/>
-        <Button Content="CutomModel" Style="{StaticResource test}" HorizontalAlignment="Left" Margin="69,645,0,0" VerticalAlignment="Top" Width="84" Command="{x:Static local:MainWindow.CustomModel}" Height="20" Grid.Column="1"/>
+        <Button Content="Start" Style="{StaticResource test}" HorizontalAlignment="Left" Margin="69,595,0,0" VerticalAlignment="Top" Width="84" Command="{x:Static local:MainWindow.Start}" Height="20" Grid.Column="1"/>
+        <Button Content="Stop" Style="{StaticResource test}" HorizontalAlignment="Left" Margin="69,620,0,0" VerticalAlignment="Top" Width="84" Command="{x:Static local:MainWindow.Stop}" Height="20" Grid.Column="1"/>
+        <Button Content="Open" Style="{StaticResource test}" HorizontalAlignment="Left" Margin="69,520,0,0" VerticalAlignment="Top" Width="84" Command="Open" Height="20" Grid.Column="1"/>
+        <Button Content="OpenDefault" Style="{StaticResource test}" HorizontalAlignment="Left" Margin="69,545,0,0" VerticalAlignment="Top" Width="84" Command="{x:Static local:MainWindow.OpenDefault}" Height="20" Grid.Column="1"/>
+        <Button Content="CutomModel" Style="{StaticResource test}" HorizontalAlignment="Left" Margin="69,570,0,0" VerticalAlignment="Top" Width="84" Command="{x:Static local:MainWindow.CustomModel}" Height="20" Grid.Column="1"/>
         <ListBox Name ="Classes" Margin="0,25,776,311" SelectionChanged="Classes_SelectionChanged" IsSynchronizedWithCurrentItem ="True" ItemTemplate="{StaticResource ClassesTemplate}" ItemsSource="{Binding Path=AvailableClasses, UpdateSourceTrigger=PropertyChanged}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Visible" Grid.ColumnSpan="2" />
         <TextBlock HorizontalAlignment="Left" Text="Class Labels" TextWrapping="Wrap" VerticalAlignment="Top" Height="20" Width="94" TextAlignment="Center" Margin="0,5,0,0" Grid.ColumnSpan="2"/>
         <!--<ProgressBar HorizontalAlignment="Left" Height="15" Margin="0,541,0,0" VerticalAlignment="Top" Width="228" Minimum="0" Maximum="{ Binding Source = StatusMax, UpdateSourceTrigger=PropertyChanged}" Name="Status" Value="{Binding Path=RecognitionStatus, UpdateSourceTrigger=PropertyChanged}" />-->
         <ListBox Name="SelectedClass" ItemsSource="{Binding Path=SelectedClassInfo,  UpdateSourceTrigger=PropertyChanged}" SelectionChanged="Item_SelectionChanged"  ItemTemplate="{StaticResource ImageTemplate}" ItemsPanel="{StaticResource PanelTemplate}"  Margin="227,25,0,278" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Visible" Grid.Column="1" />
         <ListBox Name="AllClasses" ItemsSource="{Binding Path=ClassesImages,  UpdateSourceTrigger=PropertyChanged}" SelectionChanged="Item_SelectionChanged" ItemTemplate="{StaticResource ImageTemplate}" ItemsPanel="{StaticResource PanelTemplate}"  Margin="227,276,0,0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Visible" Grid.Column="1" />
-        <TextBox Name="Statistic" Grid.Column="1" HorizontalAlignment="Left" Margin="51,510,0,0" Text="{Binding Path=Statistic}" TextWrapping="Wrap" VerticalAlignment="Top" Width="120"/>
-        <Button Content="Clear DB" Style="{StaticResource test}" HorizontalAlignment="Left" Margin="69,570,0,0" VerticalAlignment="Top" Width="84" Command="{x:Static local:MainWindow.Clear}" Height="20" Grid.Column="1"/>
+        <TextBox Name="Statistic" Grid.Column="1" HorizontalAlignment="Left" Margin="0,448,0,0" Text="{Binding Path=Statistic}" TextWrapping="Wrap" VerticalAlignment="Top" Width="120"/>
+        <Button Content="Clear DB" Style="{StaticResource test}" HorizontalAlignment="Left" Margin="69,495,0,0" VerticalAlignment="Top" Width="84" Command="{x:Static local:MainWindow.Clear}" Height="20" Grid.Column="1"/>
 
     </Grid>
 </Window>
