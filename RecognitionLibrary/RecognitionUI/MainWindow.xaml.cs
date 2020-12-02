@@ -22,8 +22,6 @@
         public ViewModel VM;
 
         /* TODO: fix ProgressBar */
-       
-
 
         public MainWindow()
         {
@@ -35,7 +33,6 @@
             VM.isRunning = false;
             //System.Windows.MessageBox.Show(ViewModel.curDir);
         }
-
 
         private void CanOpenCommand(object sender, CanExecuteRoutedEventArgs e)
         {
@@ -55,7 +52,7 @@
 
         private void OpenDefaultCommand(object sender, ExecutedRoutedEventArgs e)
         {
-            VM.OpenDefault();         //открываем дефолтную директорию через ViewModel -> Model
+            VM.OpenDefault();         
         }
 
         private void CanStartCommand(object sender, CanExecuteRoutedEventArgs e)
@@ -105,15 +102,12 @@
 
         private void CanClearCommand(object sender, CanExecuteRoutedEventArgs e)
         {
-            e.CanExecute = VM != null && !VM.isWriting;
+            e.CanExecute = VM != null && !VM.isRunning;
         }
+
         private void ClearCommand(object sender, ExecutedRoutedEventArgs e)
         {
-            lock (VM.db)
-            {
-                //System.Windows.MessageBox.Show(VM.ClassesImages.Count().ToString());
-                VM.db.Clear(); }
-            //VM.isRunning = false;
+            VM.ClearDataBase(); 
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
@@ -129,13 +123,12 @@
 
             }
         }
+
         private void Item_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (AllClasses.SelectedItem != null && AllClasses.SelectedItem.GetType().Equals(typeof(RecognitionInfo)))
             {
-                
-                VM.Statistic = VM.GetStatistic((RecognitionInfo)AllClasses.SelectedItem);
-                //System.Windows.MessageBox.Show(VM.Statistic.ToString());
+                VM.GetStatistic((RecognitionInfo)AllClasses.SelectedItem);
             }
         }
 

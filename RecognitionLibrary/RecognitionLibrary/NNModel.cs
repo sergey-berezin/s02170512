@@ -46,6 +46,8 @@
 
         public string ImageDirectory { get; set; }
 
+        public RecognitionLibraryContext recognitionLibraryContext;
+
         public NNModel(string modelPath, string labelPath, string imageDirectory = "", int size = 28, bool grayMode = false)
         {
             ModelPath = modelPath;
@@ -58,6 +60,8 @@
             CQ = new ConcurrentQueue<RecognitionInfo>();
             cancel = new CancellationTokenSource();
             ImageDirectory = imageDirectory;
+            recognitionLibraryContext = new RecognitionLibraryContext();
+
         }
 
         public DenseTensor<float> PreprocessImage(string ImagePath)
@@ -103,7 +107,7 @@
             return recognitionResult;
         }
 
-        public ConcurrentQueue<RecognitionInfo> MakePrediction(string path)
+        public ConcurrentQueue<RecognitionInfo> MakePrediction(string path)  //should check dbcontext 
         {
             MessageToUser?.Invoke(this, "If you want to stop recognition press ctrl + C");
             CancellationToken token = cancel.Token;
@@ -140,7 +144,24 @@
                                      file.Contains(".png")
                              select file;
                 }
-                var tasks = Parallel.ForEach<string>(images, po, img =>
+                List<string> paths = new List<string>();
+                lock (recognitionLibraryContext)
+                {
+                    foreach (var image in images)
+                    {
+                        RecognitionInfo temp = new RecognitionInfo(image, "", 0);
+                        var sameimage = recognitionLibraryContext.FindOne(temp);
+                        if (sameimage != null)
+                        {
+                            sameimage.Statistic++;
+                            recognitionLibraryContext.SaveChanges();
+                        }
+                        else
+                            paths.Add(image);
+                    }
+                }
+
+                var tasks = Parallel.ForEach<string>(paths, po, img =>
                     {
                         CQ.Enqueue(ProcessImage(img));
                         //Thread.Sleep(1000);
@@ -160,7 +181,7 @@
             return CQ;
         }
 
-        public ConcurrentQueue<RecognitionInfo> MakePrediction(List<String> images)
+        public ConcurrentQueue<RecognitionInfo> MakePrediction(List<String> images) //doesnt check in db context
         {
             MessageToUser?.Invoke(this, "If you want to stop recognition press ctrl + C");
             CancellationToken token = cancel.Token;
@@ -174,7 +195,7 @@
                 var tasks = Parallel.ForEach<string>(images, po, img =>
                 {
                     CQ.Enqueue(ProcessImage(img));
-                    //Thread.Sleep(1000);
+                    
                     OutputResult?.Invoke(this, CQ);
                 });
 
