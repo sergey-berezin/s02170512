@@ -15,6 +15,7 @@
     using SixLabors.ImageSharp;
     using SixLabors.ImageSharp.PixelFormats;
     using SixLabors.ImageSharp.Processing;
+    
 
     public delegate void UserMessageEventHandler(NNModel sender, string Message);
 
@@ -38,7 +39,7 @@
 
         public string[] ClassLabels { get; }
 
-        public static string DefaultImageDir = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.FullName;
+        public static string DefaultImageDir = Directory.GetCurrentDirectory();
 
         public event UserMessageEventHandler MessageToUser;
 
@@ -50,8 +51,17 @@
 
         public NNModel(string modelPath, string labelPath, string imageDirectory = "", int size = 28, bool grayMode = false)
         {
-            ModelPath = modelPath;
-            DefaultImageDir = Path.Combine(DefaultImageDir, "images");
+            if (modelPath == "")
+            {
+                ModelPath = Path.Combine(DefaultImageDir, "mnist-8.onnx");
+                labelPath = Path.Combine(DefaultImageDir, "classlabel.txt");
+                Trace.WriteLine("Model = " + ModelPath);
+                Trace.WriteLine("label = " + labelPath);
+            }
+            else
+                ModelPath = modelPath;
+
+            //DefaultImageDir = Path.Combine(DefaultImageDir, "images");
             Session = new InferenceSession(ModelPath);
             ClassLabels = File.ReadAllLines(labelPath);
             targetHeight = size;
@@ -88,6 +98,30 @@
             return input;
         }
 
+        public DenseTensor<float> PreprocessImage(byte[] im)
+        {
+            var image = Image.Load<Rgb24>(im);
+
+            image.Mutate(x => x
+                .Grayscale()
+                .Resize(new ResizeOptions { Size = new Size(targetWidth, targetHeight) })
+            );
+
+            if (grayscaleMode)
+                image.Mutate(x => x.Grayscale());
+
+            var input = new DenseTensor<float>(new[] { 1, 1, targetHeight, targetWidth });
+            for (int y = 0; y < targetHeight; y++)
+            {
+                Span<Rgb24> pixelSpan = image.GetPixelRowSpan(y);
+                for (int x = 0; x < targetWidth; x++)
+                {
+                    input[0, 0, y, x] = (pixelSpan[x].R / 255f);
+                }
+            }
+            return input;
+        }
+
         public RecognitionInfo ProcessImage(string img_path)
         {
             var input = PreprocessImage(img_path);
@@ -102,9 +136,58 @@
             var sum = output.Sum(x => (float)Math.Exp(x));
             var softmax = output.Select(x => (float)Math.Exp(x) / sum);
 
-            RecognitionInfo recognitionResult = new RecognitionInfo(img_path, ClassLabels[softmax.ToList().IndexOf(softmax.Max())], softmax.Max());
+            RecognitionInfo tmp = new RecognitionInfo(img_path, ClassLabels[softmax.ToList().IndexOf(softmax.Max())], softmax.Max());
 
-            return recognitionResult;
+            lock (recognitionLibraryContext)
+            {
+                Blob resBlob = new Blob { Image = tmp.Image };
+                recognitionLibraryContext.Add(new RecognitionImage
+                {
+                    Path = tmp.Path,
+                    Confidence = tmp.Confidence,
+                    Statistic = 0,
+                    ImageDetails = resBlob,
+                    Label = int.Parse(tmp.Class)
+                });
+                recognitionLibraryContext.Blobs.Add(resBlob);
+                recognitionLibraryContext.SaveChanges();
+            }
+
+            return tmp;
+        }
+
+        public RecognitionInfo ProcessImage(byte[] im, string path)
+        {
+            var input = PreprocessImage(im);
+            var inputs = new List<NamedOnnxValue>
+            {
+                 NamedOnnxValue.CreateFromTensor(Session.InputMetadata.Keys.First(), input)
+            };
+            var Results = Session.Run(inputs);
+
+            // Получаем 10 выходов и считаем для них softmax
+            var output = Results.First().AsEnumerable<float>().ToArray();
+            var sum = output.Sum(x => (float)Math.Exp(x));
+            var softmax = output.Select(x => (float)Math.Exp(x) / sum);
+
+            RecognitionInfo tmp = new RecognitionInfo(path, ClassLabels[softmax.ToList().IndexOf(softmax.Max())], softmax.Max());
+            tmp.Image = im;
+            lock (recognitionLibraryContext)
+            {
+                Blob resBlob = new Blob { Image = tmp.Image };
+                recognitionLibraryContext.Add(new RecognitionImage
+                {
+                    Path = tmp.Path,
+                    Confidence = tmp.Confidence,
+                    Statistic = 0,
+                    ImageDetails = resBlob,
+                    Label = int.Parse(tmp.Class)
+                });
+                recognitionLibraryContext.Blobs.Add(resBlob);
+                recognitionLibraryContext.SaveChanges();
+            }
+            Trace.WriteLine("process " + path);
+            return tmp;
         }
 
         public ConcurrentQueue<RecognitionInfo> MakePrediction(string path)  //should check dbcontext 
@@ -161,13 +244,24 @@
                     }
                 }
 
-                var tasks = Parallel.ForEach<string>(paths, po, img =>
+                var task = Task.Factory.StartNew(() =>
+                {
+                    Trace.WriteLine("StartNew");
+                    foreach (var img in images)
                     {
-                        CQ.Enqueue(ProcessImage(img));
-                        //Thread.Sleep(1000);
-                        OutputResult?.Invoke(this, CQ);
-                    });
-            
+                        var t = Task.Run(() =>
+                        {
+                                var tmp = ProcessImage(img);
+                                CQ.Enqueue(tmp);
+                                OutputResult?.Invoke(this, CQ);
+                           
+                            
+                        }, cancel.Token);
+                    }
+                });
+                task.Wait();
+                Trace.WriteLine("After wait");
+               
             }
             catch (OperationCanceledException)
             {
@@ -181,7 +275,7 @@
             return CQ;
         }
 
-        public ConcurrentQueue<RecognitionInfo> MakePrediction(List<String> images) //doesnt check in db context
+        public ConcurrentQueue<RecognitionInfo> MakePrediction(Dictionary<string, string> info) //doesnt check in db context
         {
             MessageToUser?.Invoke(this, "If you want to stop recognition press ctrl + C");
             CancellationToken token = cancel.Token;
@@ -192,12 +286,45 @@
                 po.CancellationToken = token;
                 po.MaxDegreeOfParallelism = Environment.ProcessorCount;
 
-                var tasks = Parallel.ForEach<string>(images, po, img =>
+                Dictionary<string, string> temp_info = new Dictionary<string, string>();
+                lock (recognitionLibraryContext)
                 {
-                    CQ.Enqueue(ProcessImage(img));
-                    
-                    OutputResult?.Invoke(this, CQ);
+                    foreach (var image in info)
+                    {
+                        RecognitionInfo temp = new RecognitionInfo(image.Key, "", 0);
+                        temp.Image = Convert.FromBase64String(image.Value);
+                        var sameimage = recognitionLibraryContext.FindOne(temp);
+                        if (sameimage != null)
+                        {
+                            sameimage.Statistic++;
+                            Trace.WriteLine("Statisticv   " + sameimage.Statistic);
+                            recognitionLibraryContext.SaveChanges();
+                        }
+                        else
+                        {
+                            Trace.WriteLine("Const temp_info       "  + image.Key);
+                            temp_info.Add(image.Key, image.Value);
+                        }
+                    }
+                }
+
+
+                var task = Task.Factory.StartNew(() =>
+                {
+                    Trace.WriteLine("StartNew");
+                    foreach (var img in temp_info)
+                    {
+                        var t = Task.Run(() =>
+                        {
+                            var tmp = ProcessImage(Convert.FromBase64String(img.Value), img.Key);
+                            Trace.WriteLine("Start nFactory = " + tmp.Path);
+                            CQ.Enqueue(tmp);
+                            OutputResult?.Invoke(this, CQ);
+                        }, cancel.Token);
+                        Task.WaitAll(t);
+                    }
                 });
+                Task.WaitAll(task);
 
             }
             catch (OperationCanceledException)

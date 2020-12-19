@@ -1,6 +1,7 @@
 ﻿namespace RecognitionUI
 {
     using Microsoft.EntityFrameworkCore;
+    using Newtonsoft.Json;
     using RecognitionLibrary;
     using System;
     using System.Collections.Concurrent;
@@ -9,39 +10,39 @@
     using System.ComponentModel;
     using System.IO;
     using System.Linq;
+    using System.Net.Http;
     using System.Reactive.Linq;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using System.Windows;
     using System.Windows.Threading;
-
-
-    /* TODO: поиск по хэшу  +- */ 
-    /* TODO: не подгружать блобу + */
-    /* TODO: добавить поле просмотра статистики */
-
-
 
     public class ViewModel : INotifyPropertyChanged
     {
         private string selectedClass;
 
-        internal bool isRunning;
-
-        public long Statistic { get; set; }
-
-        readonly Dispatcher disp = Dispatcher.CurrentDispatcher;
-
         private string modelPath;
 
         private string classLabels;
 
-        //private int recognitionStatus = 0;
-
-        public static string curDir = Directory.GetParent(Environment.CurrentDirectory).Parent.FullName;
-
         private string imageDirectory;
 
-        private NNModel Model; 
+        //private int recognitionStatus = 0;
+
+        private static readonly HttpClient client = new HttpClient();   //instead of model
+
+        private static readonly string url = "http://localhost:61924/recognition";
+
+        private static CancellationTokenSource cts = new CancellationTokenSource();
+
+        private Dispatcher disp = Dispatcher.CurrentDispatcher;
+
+        internal bool isRunning;
+
+        public long Statistic { get; set; }
+
+        public static string curDir = Directory.GetParent(Environment.CurrentDirectory).Parent.FullName;
 
         /*public int RecognitionStatus
         {
@@ -82,10 +83,6 @@
 
         public RecognitionInfo SelectedItem { get; set; }
 
-        public RecognitionLibraryContext db;
-        
-        internal bool isWriting = false;
-
         public event PropertyChangedEventHandler PropertyChanged;
 
         public ViewModel(params string[] s)
@@ -100,17 +97,47 @@
                 modelPath = Path.Combine(curDir, "mnist-8.onnx");
                 classLabels = Path.Combine(curDir, "classlabel.txt");
             }
-            Initialize();
-            Model.OutputResult += ChangeCollectionResult;
+            try
+            {
+                Initialize();
+            }
+            catch (HttpRequestException)
+            {
+                disp.BeginInvoke(new Action(() =>
+                {
+                    MessageBox.Show("Couldn't create model\nChoose correct files", "Info");
+                }));
+                return;
+            }
         }
 
-        public void Initialize() 
+        public void Initialize() //http put (init model)
         {
-            Model = new NNModel(modelPath, classLabels);
             AvailableClasses = new ObservableCollection<Pair<string, int>>();
             ClassesImages = new ObservableCollection<RecognitionInfo>();
             SelectedClassInfo = new ObservableCollection<RecognitionInfo>();
-            db = new RecognitionLibraryContext();
+
+            var content = new StringContent(JsonConvert.SerializeObject(modelPath + "&" + classLabels), Encoding.UTF8, "application/json");
+            HttpResponseMessage httpResponse;
+            try
+            {
+                httpResponse = client.PutAsync(url, content, cts.Token).Result;
+            }
+            catch (HttpRequestException)
+            {
+                disp.BeginInvoke(new Action(() =>
+                {
+                    MessageBox.Show("NO CONNECTION", "Couldn't create model");
+                }));
+                return;
+            }
+            if (httpResponse.IsSuccessStatusCode)
+            {
+                var result = JsonConvert.DeserializeObject<string>(httpResponse.Content.ReadAsStringAsync().Result);
+                if (result == "SUCCESSFULLY CREATED MODEL: OK")
+                    return;
+                throw new HttpRequestException();
+            }
         }
 
         public void Clear()
@@ -120,8 +147,113 @@
             SelectedClassInfo.Clear();
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("AvailableCLasses"));
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("CLassesImages"));
-            Model.CQ.Clear();
+            
         }
+
+        public void ClearDataBase()
+        {
+            Task.Run(() =>
+            {
+                try
+                {
+                    var httpResponse = client.DeleteAsync(url).Result;
+                }
+                catch (AggregateException)
+                {
+                    disp.BeginInvoke(new Action(() =>
+                    {
+                        MessageBox.Show("NO CONNECTION", "Info");
+                    }));
+                }
+            });
+            Statistic = 0;
+        }
+
+        public void OpenDefault()
+        {
+            //Clear();
+            imageDirectory = NNModel.DefaultImageDir;
+            //StatusMax = new DirectoryInfo(imageDirectory).GetFiles().Length;
+            //PropertyChanged(this, new PropertyChangedEventArgs("StatusMax"));
+
+        }
+
+        public void Open(string selectedPath)
+        {
+            Clear();
+            imageDirectory = selectedPath;
+            //StatusMax = new DirectoryInfo(selectedPath).GetFiles().Length;
+            //PropertyChanged(this, new PropertyChangedEventArgs("StatusMax"));
+        }
+
+        public void Start()   //http request
+        {
+            isRunning = true;
+            Task.Run(() =>
+            {
+                PostRequest();
+            }).ContinueWith(t =>
+            {
+                isRunning = false;
+            });
+        }
+
+        public void Stop()
+        {
+            cts.Cancel();
+            cts.Dispose();
+            cts = new CancellationTokenSource();
+            isRunning = false;
+        }
+
+        /* public void ChangeCollectionResult(NNModel sender, ConcurrentQueue<RecognitionInfo> result) 
+         {
+             disp.BeginInvoke(new Action(() =>
+             {
+                 RecognitionInfo tmp;
+                 result.TryDequeue(out tmp);
+                 lock (db)
+                 {
+                     ClassesImages.Add(tmp);
+                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("ClassesImages"));
+                     Task.Run(() =>
+                     {
+                         lock (db)
+                         {
+                             isWriting = true;
+                             Blob resBlob = new Blob { Image = tmp.Image };
+                             db.Add(new RecognitionImage
+                             {
+                                 Path = tmp.Path,
+                                 Confidence = tmp.Confidence,
+                                 Statistic = 0,
+                                 ImageDetails = resBlob,
+                                 Label = int.Parse(tmp.Class)
+                             });
+                             db.Blobs.Add(resBlob);
+                             db.SaveChanges();
+                         }
+                     });
+                 }
+
+                 isWriting = false;
+                 //PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("ClassesImages"));
+                 Pair<string, int> p;
+                 try
+                 {
+                     p = AvailableClasses.Single(i => i.Item1 == tmp.Class);
+                     p.Item2 += 1;
+                 }
+                 catch(InvalidOperationException)
+                 {
+                     AvailableClasses.Add(new Pair<string, int>(tmp.Class, 1));
+                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("AvailableClasses"));
+                 }         
+             }));
+             //RecognitionStatus += ClassesInfo.Count;
+             //SourceChanged?.Invoke(this, e: new SourceChangedEventArgs("Classes"));
+             //PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Item2"));
+         }*/
 
         public ObservableCollection<RecognitionInfo> SelectAll(string classlabel) // add collection filter???
         {
@@ -136,148 +268,88 @@
             return res;
         }
 
-        public void ChangeCollectionResult(NNModel sender, ConcurrentQueue<RecognitionInfo> result) 
+        public long GetStatistic(RecognitionInfo selected) //get http add isGetting???
         {
-            disp.BeginInvoke(new Action(() =>
+            long res = 999999;
+            Task.Run(() => 
             {
-                RecognitionInfo tmp;
-                result.TryDequeue(out tmp);
-                lock (db)
-                {
-                    ClassesImages.Add(tmp);
-                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("ClassesImages"));
-                    Task.Run(() =>
-                    {
-                        lock (db)
-                        {
-                            isWriting = true;
-                            Blob resBlob = new Blob { Image = tmp.Image };
-                            db.Add(new RecognitionImage
-                            {
-                                Path = tmp.Path,
-                                Confidence = tmp.Confidence,
-                                Statistic = 0,
-                                ImageDetails = resBlob,
-                                Label = int.Parse(tmp.Class)
-                            });
-                            db.Blobs.Add(resBlob);
-                            db.SaveChanges();
-                        }
-                    });
-                }
-
-                isWriting = false;
-                //PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("ClassesImages"));
-                Pair<string, int> p;
                 try
                 {
-                    p = AvailableClasses.Single(i => i.Item1 == tmp.Class);
-                    p.Item2 += 1;
+                    var httpResponse = client.GetAsync(url).Result;
+                    var stats = JsonConvert.DeserializeObject<long>(httpResponse.Content.ReadAsStringAsync().Result);
+                    if (stats != 999999)
+                    {
+                        disp.BeginInvoke(new Action(() =>
+                        {
+                            res  = stats;
+                        }));
+                    }
                 }
-                catch(InvalidOperationException)
+                catch (AggregateException)
                 {
-                    AvailableClasses.Add(new Pair<string, int>(tmp.Class, 1));
-                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("AvailableClasses"));
-                }         
-            }));
-            //RecognitionStatus += ClassesInfo.Count;
-            //SourceChanged?.Invoke(this, e: new SourceChangedEventArgs("Classes"));
-            //PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Item2"));
-        }
-
-        public long GetStatistic(RecognitionInfo selected)
-        {
-            long res;
-
-            lock (db)
-            {
-                var tmp = db.FindOne(selected);
-                if (tmp != null)//res = db.RecognitionImages.Where(img => img.Path.Equals(selected.Path)).FirstOrDefault().Statistic;
-                    res = tmp.Statistic;
-                else
-                    res = 99999;
-            }
+                    disp.BeginInvoke(new Action(() =>
+                    {
+                        MessageBox.Show("NO CONNECTION", "Info");
+                    }));
+                }
+            });
+            Statistic = res;
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Statistic"));
             return res;
         }
 
-        public void OpenDefault() //task
+        private async void PostRequest()
         {
-            //Clear();
-            imageDirectory =  NNModel.DefaultImageDir;
-            Model.ImageDirectory = imageDirectory;
-            //StatusMax = new DirectoryInfo(imageDirectory).GetFiles().Length;
-            //PropertyChanged(this, new PropertyChangedEventArgs("StatusMax"));
-
-        }
-
-        internal void Open(string selectedPath) 
-        {
-            Clear();
-            Model.ImageDirectory = selectedPath;
-            //StatusMax = new DirectoryInfo(selectedPath).GetFiles().Length;
-            //PropertyChanged(this, new PropertyChangedEventArgs("StatusMax"));
-        }
-
-        internal void Start()
-        {
-            var tmp = from file in Directory.GetFiles(Model.ImageDirectory) // пустой путь - throw exception
-                               where file.Contains(".jpg") ||
-                                       file.Contains(".jpeg") ||
-                                       file.Contains(".png")
-                               select file;
-            List<string> paths = tmp.ToList();
-            List<string> respaths = new List<string>();
-
-            lock (db)
+            try
             {
-                foreach (var p in paths)
+                var content = new StringContent(JsonConvert.SerializeObject(imageDirectory), Encoding.UTF8, "application/json");
+                HttpResponseMessage httpResponse;
+                try
                 {
-                    RecognitionInfo temp = new RecognitionInfo(p, "", 0);
-                    var sameimage = db.FindOne(temp);
-                    if (sameimage != null)
+                    httpResponse = await client.PostAsync(url, content, cts.Token);
+                }
+                catch (HttpRequestException)
+                {
+                    await disp.BeginInvoke(new Action(() =>
                     {
-                        isWriting = true;
-                        sameimage.Statistic++;
-                        db.SaveChanges();
-                        ClassesImages.Add(new RecognitionInfo(sameimage.Path, sameimage.Label.ToString(), sameimage.Confidence));
-                        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("ClassesImages"));
-                        Pair<string, int> pair;
-                        try
-                        {
-                            pair = AvailableClasses.Single(i => i.Item1 == sameimage.Label.ToString());
-                            pair.Item2 += 1;
-                        }
-                        catch (InvalidOperationException)
-                        {
-                            AvailableClasses.Add(new Pair<string, int>(sameimage.Label.ToString(), 1));
-                            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("AvailableClasses"));
-                        }
+                        MessageBox.Show("NO CONNECTION", "Warning");
+                        Stop();
+                    }));
+                    return;
+                }
 
-                    }
-                    else
+                if (httpResponse.IsSuccessStatusCode)
+                {
+                    var items = JsonConvert.DeserializeObject<List<RecognitionInfo>>(httpResponse.Content.ReadAsStringAsync().Result);
+                    foreach (var item in items)
                     {
-                        respaths.Add(p);
+                        await disp.BeginInvoke(new Action(() =>  //await ???
+                        {
+                            ClassesImages.Add(item);
+                            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("ClassesImages"));
+                            Pair<string, int> p;
+                            try
+                            {
+                                p = AvailableClasses.Single(i => i.Item1 == item.Class);
+                                p.Item2 += 1;
+                            }
+                            catch (InvalidOperationException)
+                            {
+                                AvailableClasses.Add(new Pair<string, int>(item.Class, 1));
+                                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("AvailableClasses"));
+                            }
+                        }));
                     }
+                    isRunning = false;
                 }
             }
-            isWriting = false;
-
-            Task.Run(() =>
+            catch (OperationCanceledException)
             {
-                var res = Model.MakePrediction(respaths);
-                //return res;
-            }).ContinueWith(t =>
-            {
-                isRunning = false;
-            });
+                await disp.BeginInvoke(new Action(() =>
+                {
+                    MessageBox.Show("RECOGNITION STOPPED", "Warning");
+                }));
+            }
         }
-
-        internal void Stop()
-        {            
-            Model.StopRecognition();
-            isRunning = false;
-        }
-
     }
 }

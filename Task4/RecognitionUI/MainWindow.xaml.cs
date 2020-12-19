@@ -1,9 +1,7 @@
 ﻿namespace RecognitionUI
 {
-    using RecognitionLibrary;
+    using Contracts;
     using System.Collections.Generic;
-    using System.IO;
-    using System.Linq;
     using System.Windows;
     using System.Windows.Controls;
     using System.Windows.Forms;
@@ -11,17 +9,13 @@
 
     public partial class MainWindow : Window
     {
-        
         public static RoutedCommand OpenDefault = new RoutedCommand("OpenDefault", typeof(MainWindow));
-        public static RoutedCommand CustomModel = new RoutedCommand("CustomModel", typeof(MainWindow));
+        //public static RoutedCommand CustomModel = new RoutedCommand("CustomModel", typeof(MainWindow));
         public static RoutedCommand Clear = new RoutedCommand("Clear", typeof(MainWindow));
         public static RoutedCommand Start = new RoutedCommand("Start", typeof(MainWindow));
         public static RoutedCommand Stop = new RoutedCommand("Stop", typeof(MainWindow));
-        
 
         public ViewModel VM;
-
-        /* TODO: fix ProgressBar */
 
         public MainWindow()
         {
@@ -31,7 +25,6 @@
             this.CommandBindings.Add(OpenCmdBinding);
             this.DataContext = VM;
             VM.isRunning = false;
-            //System.Windows.MessageBox.Show(ViewModel.curDir);
         }
 
         private void CanOpenCommand(object sender, CanExecuteRoutedEventArgs e)
@@ -52,7 +45,7 @@
 
         private void OpenDefaultCommand(object sender, ExecutedRoutedEventArgs e)
         {
-            VM.OpenDefault();         
+            VM.OpenDefault();
         }
 
         private void CanStartCommand(object sender, CanExecuteRoutedEventArgs e)
@@ -77,7 +70,7 @@
             //VM.isRunning = false;
         }
 
-        private void CanCustomCommand(object sender, CanExecuteRoutedEventArgs e)
+       /* private void CanCustomCommand(object sender, CanExecuteRoutedEventArgs e)
         {
             e.CanExecute = true;
         }
@@ -92,13 +85,13 @@
                 List<string> paths = new List<string>(ofd.FileNames);
                 string modelPath = paths.Find(s => s.Contains(".onnx"));
                 string labelsPath = paths.Find(s => s.Contains("txt") || s.Contains("csv") || s.Contains("label"));
-               // System.Windows.MessageBox.Show(modelPath);
-               // System.Windows.MessageBox.Show( labelsPath);
+                // System.Windows.MessageBox.Show(modelPath);
+                // System.Windows.MessageBox.Show( labelsPath);
                 VM = new ViewModel(modelPath, labelsPath);
                 this.DataContext = VM;
                 VM.isRunning = false;
             }
-        }
+        }*/
 
         private void CanClearCommand(object sender, CanExecuteRoutedEventArgs e)
         {
@@ -107,12 +100,7 @@
 
         private void ClearCommand(object sender, ExecutedRoutedEventArgs e)
         {
-            VM.ClearDataBase(); 
-        }
-
-        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
-        {
-            
+            VM.ClearDataBase();
         }
 
         private void Classes_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -126,9 +114,9 @@
 
         private void Item_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (AllClasses.SelectedItem != null && AllClasses.SelectedItem.GetType().Equals(typeof(RecognitionInfo)))
+            if (AllClasses.SelectedItem != null && AllClasses.SelectedItem.GetType().Equals(typeof(RecognitionContract)))
             {
-                VM.GetStatistic((RecognitionInfo)AllClasses.SelectedItem);
+                VM.GetStatistic((RecognitionContract)AllClasses.SelectedItem);
             }
         }
 

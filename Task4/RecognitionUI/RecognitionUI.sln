@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30717.126
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RecognitionUI", "RecognitionUI.csproj", "{8FEEC916-872C-491A-88AE-D4144A8A48A9}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Contract", "..\Contract\Contract.csproj", "{500474E5-F5CC-42CB-AB4C-1B0AA0CC158D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8FEEC916-872C-491A-88AE-D4144A8A48A9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8FEEC916-872C-491A-88AE-D4144A8A48A9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8FEEC916-872C-491A-88AE-D4144A8A48A9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8FEEC916-872C-491A-88AE-D4144A8A48A9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{500474E5-F5CC-42CB-AB4C-1B0AA0CC158D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{500474E5-F5CC-42CB-AB4C-1B0AA0CC158D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{500474E5-F5CC-42CB-AB4C-1B0AA0CC158D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{500474E5-F5CC-42CB-AB4C-1B0AA0CC158D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {3171FFF1-B3D5-4CE3-9F31-F7572ED251B1}
+	EndGlobalSection
+EndGlobal
